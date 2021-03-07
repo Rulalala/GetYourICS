@@ -52,11 +52,11 @@ def scuCreateStuAnyway(stu_id=None):
         time_now = time.time()
         if stu_id is None:
             current_app.scu_stu_dict[current_app.scu_stu_id] = (scu_ics.get_stu(),time_now,current_app.scu_time_expeire)
-            stu_id = session['stu_id'] = current_app.scu_stu_id
+            stu_id = current_app.scu_stu_id
             current_app.scu_stu_id += 1
         else:
-            current_app.scu_stu_dict[stu_id] = (scu_ics.get_stu(),time_now,current_app.scu_time_expeire)
-            session['stu_id'] = stu_id
+            if current_app.scu_stu_dict[stu_id] is None:
+                current_app.scu_stu_dict[stu_id] = (scu_ics.get_stu(),time_now,current_app.scu_time_expeire)
     return stu_id
 
 def scuCheckAndDelete()->int:
@@ -165,7 +165,7 @@ def scuIcs():
         scuCheckAndDelete()
         ret = None
         stu_id: int = session.get('stu_id')
-        stu_id  = scuCreateStuAnyway(stu_id=stu_id)
+        stu_id = session['stu_id'] = scuCreateStuAnyway(stu_id=stu_id)
         if request.method == "GET":
             args= {'randomid':os.urandom(16).hex().upper()}
             args.update(current_app.scu_context)
@@ -195,10 +195,7 @@ def scuIcs():
 def scuCaptcha():
     try:
         stu_id: int = session.get('stu_id')
-        if stu_id is None:
-            current_app.scu_stu_dict[current_app.scu_stu_id] = (scu_ics.get_stu(),time.time(),current_app.scu_time_expeire)
-            stu_id = session['stu_id'] = current_app.scu_stu_id
-            current_app.scu_stu_id += 1
+        stu_id = session['stu_id'] = scuCreateStuAnyway(stu_id=stu_id)
         stu: scu_ics.sub.StuStudent = current_app.scu_stu_dict[stu_id]
         captcha = stu[0].getCaptcha()
         response = make_response(captcha)
